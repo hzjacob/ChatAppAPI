@@ -1,0 +1,50 @@
+@ChatAppTest_HostAdress = http://localhost:5145
+
+### Get Users
+GET {{ChatAppTest_HostAdress}}/api/users
+Accept: application/json
+
+### Get Messages
+GET {{ChatAppTest_HostAdress}}/api/message
+Accept: application/json
+
+### Send Message
+POST {{ChatAppTest_HostAdress}}/api/message
+Accept: application/json
+
+### Search message
+GET {{ChatAppTest_HostAdress}}/api/message/search?query=sea
+Accept: application/json
+
+### Delete Message
+DELETE {{ChatAppTest_HostAdress}}/api/message/?id=115
+
+### Request OTP
+POST {{ChatAppTest_HostAdress}}/api/auth/request-otp
+Content-Type: application/json
+
+"hzjacob01@gmail.com"
+
+### Verify OTP
+POST {{ChatAppTest_HostAdress}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+    "email" : "hzjacob01@gmail.com",
+    "token" : "38624883"
+}
+
+### Send SMS OTP
+POST {{ChatAppTest_HostAdress}}/api/auth/request-sms-otp
+Content-Type: application/json
+
+"+994552645627"
+
+### Verify SMS OTP
+POST {{ChatAppTest_HostAdress}}/api/auth/verify-sms-otp
+Content-Type: application/json
+
+{
+    "phoneNumber": "+994552645627",
+    "token": "322174"
+}
