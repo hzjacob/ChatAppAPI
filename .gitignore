@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 # Ignore sensitive configuration files
 appsettings.json
 appsettings.Development.json
+
+# Http files
+Test.http
