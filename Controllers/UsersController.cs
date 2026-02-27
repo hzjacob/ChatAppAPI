@@ -25,7 +25,10 @@ namespace ChatAppTest.Controllers
                 var users = result.Models.Select(u => new UserDTO
                 {
                     Id = u.Id,
-                    Username = u.Username
+                    Username = u.Username,
+                    Password = u.Password,
+                    User_email = u.User_email
+
                 }).ToList();
                 return Ok(users);
             }
@@ -35,13 +38,15 @@ namespace ChatAppTest.Controllers
             }
         }
         [HttpPost]
-        public async Task<IActionResult> CreateUser(string username)
+        public async Task<IActionResult> CreateUser([FromBody] User newUser)
         {
             try
             {
                 var result = await _supabase.From<User>().Insert(new User
                 {
-                    Username = username
+                    Username = newUser.Username,
+                    User_email = newUser.User_email,
+                    Password = newUser.Password
                 });
                 return Ok(result.Content);
             }
@@ -51,7 +56,7 @@ namespace ChatAppTest.Controllers
             }
         }
         [HttpGet("login")]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login([FromBody] UserDTO userDTO)
         {
             try
             {

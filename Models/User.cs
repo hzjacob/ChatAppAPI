@@ -3,7 +3,7 @@ using Postgrest.Attributes;
 using Postgrest.Models;
 namespace chatAppTest.Models
 {
-    [Table("User")]
+    [Postgrest.Attributes.Table("User")]
     public class User : BaseModel
     {
         [PrimaryKey("id", false)]
@@ -11,6 +11,11 @@ namespace chatAppTest.Models
         public int Id { get; set; }
         [Column("username")]
         public string Username { get; set; } = string.Empty;
+        [Column("user_email")]
+        public string User_email { get; set; } = string.Empty;
+        [Column("user_password")]
+        public string Password { get; set;} = string.Empty;
+        
 
     }
 }
