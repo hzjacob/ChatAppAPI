@@ -55,12 +55,14 @@ namespace ChatAppTest.Controllers
                 return StatusCode(500, $"Error creating user: {ex.Message}");
             }
         }
-        [HttpGet("login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserDTO userDTO)
         {
             try
             {
-                var result = await _supabase.From<User>().Where(u => u.Username == username).Get();
+                var result = await _supabase.From<User>().Where(u => u.User_email == userDTO.User_email)
+                .Where(u => u.Password == userDTO.Password)
+                .Get();
                 var user = result.Models.FirstOrDefault();
                 if (user == null)
                 {
