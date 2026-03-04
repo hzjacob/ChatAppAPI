@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Postgrest.Attributes;
 using Postgrest.Models;
-namespace chatAppTest.Models
+using ColumnAttribute = Postgrest.Attributes.ColumnAttribute;
+namespace ChatAppTest.Models
 {
     [Postgrest.Attributes.Table("User")]
     public class User : BaseModel
@@ -13,7 +15,7 @@ namespace chatAppTest.Models
         public string Username { get; set; } = string.Empty;
         [Column("user_email")]
         public string User_email { get; set; } = string.Empty;
-        [Column("user_password")]
+        [Column("password")]
         public string Password { get; set;} = string.Empty;
         
 

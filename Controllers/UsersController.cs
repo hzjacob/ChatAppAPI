@@ -1,9 +1,11 @@
 namespace ChatAppTest.Controllers
 {
-    using chatAppTest.Models;
-    using ChatAppTest.Models;
     using Microsoft.AspNetCore.Mvc;
     using Supabase;
+    using ChatAppTest.Models;
+    using DbUser = ChatAppTest.Models.User;
+    // We use an alias for BCrypt to prevent naming conflicts
+    using BC = BCrypt.Net.BCrypt; 
 
     [ApiController]
     [Route("api/[controller]")]
@@ -16,63 +18,57 @@ namespace ChatAppTest.Controllers
             _supabase = supabase;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] UserDTO dto)
         {
             try
             {
-                var result = await _supabase.From<User>().Get();
-                var users = result.Models.Select(u => new UserDTO
+                // Using the BC alias makes the code clean and avoids "Net" errors
+                string passwordHash = BC.HashPassword(dto.Password);
+                
+                var newUser = new DbUser
                 {
-                    Id = u.Id,
-                    Username = u.Username,
-                    Password = u.Password,
-                    User_email = u.User_email
+                    Username = dto.Username,
+                    User_email = dto.User_email,
+                    Password = passwordHash 
+                };
 
-                }).ToList();
-                return Ok(users);
+                await _supabase.From<DbUser>().Insert(newUser);
+                
+                return Ok(new { Message = "User registered successfully" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error fetching users: {ex.Message}");
+                return BadRequest($"Registration failed: {ex.Message}");
             }
         }
-        [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] User newUser)
-        {
-            try
-            {
-                var result = await _supabase.From<User>().Insert(new User
-                {
-                    Username = newUser.Username,
-                    User_email = newUser.User_email,
-                    Password = newUser.Password
-                });
-                return Ok(result.Content);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error creating user: {ex.Message}");
-            }
-        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserDTO userDTO)
         {
-            try
+            try 
             {
-                var result = await _supabase.From<User>().Where(u => u.User_email == userDTO.User_email)
-                .Where(u => u.Password == userDTO.Password)
-                .Get();
-                var user = result.Models.FirstOrDefault();
-                if (user == null)
+                var result = await _supabase.From<DbUser>()
+                    .Where(u => u.User_email == userDTO.User_email)
+                    .Get();
+
+                var dbUser = result.Models.FirstOrDefault();
+
+                // Null check 'dbUser != null' fixes the CS8602 warning
+                if (dbUser != null && BC.Verify(userDTO.Password, dbUser.Password))
                 {
-                    return NotFound("User not found");
+                    return Ok(new UserDTO 
+                    { 
+                        Id = dbUser.Id, 
+                        Username = dbUser.Username 
+                    });
                 }
-                return Ok(new UserDTO { Id = user.Id, Username = user.Username });
+
+                return Unauthorized("Invalid email or password");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error logging in: {ex.Message}");
+                return StatusCode(500, $"Login error: {ex.Message}");
             }
         }
     }
