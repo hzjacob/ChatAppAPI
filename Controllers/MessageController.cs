@@ -1,7 +1,10 @@
+using ChatAppTest.Models;
+using Microsoft.AspNetCore.Mvc;
+using static Postgrest.Constants;
 namespace ChatAppTest.Controllers
 {
-    using ChatAppTest.Models;
-    using Microsoft.AspNetCore.Mvc;
+
+    
 
     [ApiController]
     [Route("api/[controller]")]
@@ -90,6 +93,42 @@ namespace ChatAppTest.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error deleting message: {ex.Message}");
+            }
+        }
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedMessages([FromQuery] int currentOffset, [FromQuery] int messagePageSize)
+        {
+            try
+            {
+                var response = await _supabase
+                    .From<Message>()
+                    .Order("created_at", Postgrest.Constants.Ordering.Descending)
+                    .Range(currentOffset, currentOffset + messagePageSize - 1)
+                    .Get();
+
+                // 1. Check if we actually got a successful response from Supabase
+                if (response.ResponseMessage?.IsSuccessStatusCode == true)
+                {
+                    // 2. Map the complex Supabase models to your simple MessageDTOs
+                    var messages = response.Models.Select(m => new MessageDTO
+                    {
+                        Id = m.Id,
+                        Username = m.Username,
+                        Content = m.Content,
+                        CreatedAt = m.CreatedAt,
+                        SendTo = m.SendTo
+                    }).ToList();
+
+                    // 3. ONLY return the list of DTOs. 
+                    // This is what System.Text.Json can handle perfectly.
+                    return Ok(messages); 
+                }
+
+                return BadRequest("Could not fetch messages from Supabase.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
             }
         }
     }
