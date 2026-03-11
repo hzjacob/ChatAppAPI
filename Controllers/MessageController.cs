@@ -39,21 +39,25 @@ namespace ChatAppTest.Controllers
             }
         }
         [HttpPost]
-        public async Task<IActionResult> SendMessage()
+        public async Task<IActionResult> SendMessage([FromBody] MessageDTO message)
         {
             try
             {
-                var result = await _supabase.From<Message>().Insert(new Message
+                var insertMessage = new Message
                 {
-                    Username = "anaratten",
-                    Content = "bu mesaj api vasitesile gonderilmishdir, Anar bayramova tten",
-                    CreatedAt = DateTime.UtcNow,
-                    SendTo = null
-                });
-                return Ok(result.Content);
+                    Username = message.Username,
+                    Content = message.Content,
+                    CreatedAt = message.CreatedAt,
+                    SendTo = message.SendTo,
+                    RoomId = message.RoomId
+                };
+                var result = await _supabase.From<Message>().Insert(insertMessage);
+
+                return Ok(new { success = true });
             }
-            catch(Exception ex)
-            {
+            catch(Exception ex){
+
+                Console.WriteLine($"API Error: {ex.Message}");
                 return StatusCode(500, $"Error sending message: {ex.Message}");
             }
         }
