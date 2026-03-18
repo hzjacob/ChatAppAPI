@@ -1,11 +1,12 @@
 using ChatAppTest.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using static Postgrest.Constants;
 namespace ChatAppTest.Controllers
 {
 
     
-
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class MessageController : ControllerBase

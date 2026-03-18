@@ -5,19 +5,48 @@ namespace ChatAppTest.Controllers
     using ChatAppTest.Models;
     using DbUser = ChatAppTest.Models.User;
     // We use an alias for BCrypt to prevent naming conflicts
-    using BC = BCrypt.Net.BCrypt; 
+    using BC = BCrypt.Net.BCrypt;
+    using System.Security.Claims;
+    using System.Security.Cryptography;
+    using Microsoft.IdentityModel.Tokens;
+    using System.Text.Unicode;
+    using System.Text;
+    using System.IdentityModel.Tokens.Jwt;
 
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
         private readonly Supabase.Client _supabase;
+        private readonly IConfiguration? _config;
 
-        public UsersController(Supabase.Client supabase)
+        public UsersController(Supabase.Client supabase, IConfiguration config)
         {
             _supabase = supabase;
+            _config = config;
         }
 
+        private string GenerateJwtToken(User user)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.User_email),
+                new Claim("User_id", user.Id.ToString())
+            };
+            var keyStr = _config["Jwt:Key"];
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: "ChatAppAPI",
+                audience: "ChatApp",
+                claims: claims,
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: creds
+            );
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDTO dto)
         {
@@ -57,10 +86,12 @@ namespace ChatAppTest.Controllers
                 // Null check 'dbUser != null' fixes the CS8602 warning
                 if (dbUser != null && BC.Verify(userDTO.Password, dbUser.Password))
                 {
+                    var token = GenerateJwtToken(dbUser);
                     return Ok(new UserDTO 
                     { 
                         Id = dbUser.Id, 
-                        Username = dbUser.Username 
+                        Username = dbUser.Username,
+                        Token = token
                     });
                 }
 
