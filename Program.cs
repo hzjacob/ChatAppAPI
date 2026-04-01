@@ -51,6 +51,7 @@ var app = builder.Build();
 
 app.UseCors("BlazorPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -17,6 +17,10 @@ namespace ChatAppTest.Models
         public string User_email { get; set; } = string.Empty;
         [Column("password")]
         public string Password { get; set;} = string.Empty;
+        [Column("refresh_token")]
+        public string RefreshToken { get; set; } = string.Empty;
+        [Column("refresh_token_expiry")]
+        public DateTime RefreshTokenExpiry { get; set; }
         
 
     }

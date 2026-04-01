@@ -32,20 +32,28 @@ namespace ChatAppTest.Controllers
             {
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.User_email),
-                new Claim("User_id", user.Id.ToString())
+                new Claim("User_id", user.Id.ToString()),
+                new Claim("role", "authenticated")
             };
             var keyStr = _config["Jwt:Key"];
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: "ChatAppAPI",
-                audience: "ChatApp",
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
                 claims: claims,
                 expires: DateTime.Now.AddDays(1),
                 signingCredentials: creds
             );
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDTO dto)
@@ -87,11 +95,23 @@ namespace ChatAppTest.Controllers
                 if (dbUser != null && BC.Verify(userDTO.Password, dbUser.Password))
                 {
                     var token = GenerateJwtToken(dbUser);
+                    var refreshToken = GenerateRefreshToken();
+
+                    dbUser.RefreshToken = refreshToken;
+                    dbUser.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); 
+                    await _supabase.From<DbUser>()
+                    .Where(u=> u.Id == dbUser.Id)
+                    .Set(u => u.RefreshToken, dbUser.RefreshToken)
+                    .Set(u => u.RefreshTokenExpiry, dbUser.RefreshTokenExpiry)
+                    .Update();
                     return Ok(new UserDTO 
                     { 
                         Id = dbUser.Id, 
                         Username = dbUser.Username,
-                        Token = token
+                        Token = token,
+                        RefreshToken = refreshToken
+
+
                     });
                 }
 
