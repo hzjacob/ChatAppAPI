@@ -32,7 +32,7 @@ namespace ChatAppTest.Controllers
             {
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.User_email),
-                new Claim("User_id", user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("role", "authenticated")
             };
             var keyStr = _config["Jwt:Key"];

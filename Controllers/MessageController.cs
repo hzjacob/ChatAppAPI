@@ -57,8 +57,6 @@ namespace ChatAppTest.Controllers
                 return Ok(new { success = true });
             }
             catch(Exception ex){
-
-                Console.WriteLine($"API Error: {ex.Message}");
                 return StatusCode(500, $"Error sending message: {ex.Message}");
             }
         }
