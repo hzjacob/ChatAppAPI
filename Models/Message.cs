@@ -18,5 +18,7 @@ namespace ChatAppTest.Models
         public long? SendTo { get; set; }
         [Column("room_id")]
         public string? RoomId {get; set;}
+        [Column("sender_id")]
+        public int? SenderId {get; set;}
     }
 }

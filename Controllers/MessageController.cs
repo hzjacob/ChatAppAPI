@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using ChatAppTest.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -99,13 +100,14 @@ namespace ChatAppTest.Controllers
             }
         }
         [HttpGet("paged")]
-        public async Task<IActionResult> GetPagedMessages([FromQuery] int currentOffset, [FromQuery] int messagePageSize)
+        public async Task<IActionResult> GetPagedMessages([FromQuery] int currentOffset, [FromQuery] int messagePageSize, [FromQuery] string roomId)
         {
             try
             {
                 var response = await _supabase
                     .From<Message>()
                     .Order("created_at", Postgrest.Constants.Ordering.Descending)
+                    .Filter("room_id", Postgrest.Constants.Operator.Equals, roomId)
                     .Range(currentOffset, currentOffset + messagePageSize - 1)
                     .Get();
 
@@ -132,6 +134,29 @@ namespace ChatAppTest.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+        [HttpGet("room/{roomId}")]
+        public async Task<IActionResult> GetMessagesByRoomId(int roomId)
+        {
+            try
+            {
+                var result = await _supabase.From<Message>()
+                    .Filter("room_id", Postgrest.Constants.Operator.Equals, roomId.ToString())
+                    .Get();
+                var messages = result.Models.Select(m => new MessageDTO
+                {
+                    Id = m.Id,
+                    Username = m.Username,
+                    Content = m.Content,
+                    CreatedAt = m.CreatedAt,
+                    SendTo = m.SendTo
+                }).ToList();
+                return Ok(messages);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error fetching messages by room ID: {ex.Message}");
             }
         }
     }
