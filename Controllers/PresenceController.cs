@@ -63,12 +63,14 @@ namespace ChatAppTest.Controllers
             {
                 return StatusCode(500, $"Error fetching online users: {response.ResponseMessage.ReasonPhrase}");
             }
+            Console.WriteLine(response.Content);
             return Ok(response.Models.Select(p => new PresenceDTO
             {
                 UserId = p.UserId,
                 Username = p.Username,
                 LastSeen = p.LastSeen
             }).ToList());
+            
         }
     }
 }
