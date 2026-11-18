@@ -42,9 +42,9 @@ namespace ChatAppTest.Controllers
                 };
 
                 var response = await _supabaseClient.From<Presence>().Upsert(presence);
-                if (!response.ResponseMessage.IsSuccessStatusCode)
+                if (response.ResponseMessage is not { IsSuccessStatusCode: true })
                 {
-                    return StatusCode(500, $"Error updating presence: {response.ResponseMessage.ReasonPhrase}");
+                    return StatusCode(500, $"Error updating presence: {response.ResponseMessage?.ReasonPhrase}");
                 }
                 return Ok("Heartbeat successful");
             }
@@ -59,9 +59,9 @@ namespace ChatAppTest.Controllers
         {
 
             var response = await _supabaseClient.From<Presence>().Select("*").Get();
-            if (!response.ResponseMessage.IsSuccessStatusCode)
+            if (response.ResponseMessage is not { IsSuccessStatusCode: true })
             {
-                return StatusCode(500, $"Error fetching online users: {response.ResponseMessage.ReasonPhrase}");
+                return StatusCode(500, $"Error fetching online users: {response.ResponseMessage?.ReasonPhrase}");
             }
             Console.WriteLine(response.Content);
             return Ok(response.Models.Select(p => new PresenceDTO

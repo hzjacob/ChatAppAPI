@@ -4,7 +4,6 @@ namespace ChatAppTest.Controllers
     using Supabase;
     using ChatAppTest.Models;
     using DbUser = ChatAppTest.Models.User;
-    // We use an alias for BCrypt to prevent naming conflicts
     using BC = BCrypt.Net.BCrypt;
     using System.Security.Claims;
     using System.Security.Cryptography;
@@ -18,7 +17,7 @@ namespace ChatAppTest.Controllers
     public class UsersController : ControllerBase
     {
         private readonly Supabase.Client _supabase;
-        private readonly IConfiguration? _config;
+        private readonly IConfiguration _config;
 
         public UsersController(Supabase.Client supabase, IConfiguration config)
         {
@@ -35,7 +34,8 @@ namespace ChatAppTest.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("role", "authenticated")
             };
-            var keyStr = _config["Jwt:Key"];
+            var keyStr = _config["Jwt:Key"]
+                ?? throw new InvalidOperationException("Missing configuration value 'Jwt:Key'.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

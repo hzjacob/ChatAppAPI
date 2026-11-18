@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
-var supabaseURL = builder.Configuration["Supabase:Url"];
-var supabaseKey = builder.Configuration["Supabase:Key"];
+var supabaseURL = builder.Configuration["Supabase:Url"]
+    ?? throw new InvalidOperationException("Missing configuration value 'Supabase:Url'.");
+var supabaseKey = builder.Configuration["Supabase:Key"]
+    ?? throw new InvalidOperationException("Missing configuration value 'Supabase:Key'.");
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]
+    ?? throw new InvalidOperationException("Missing configuration value 'Jwt:Key'."));
 
 
 // Add services to the container.
@@ -16,7 +19,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 options.AddPolicy("BlazorPolicy", policy =>
 {
-    policy.WithOrigins("https://localhost:7232","http://localhost:5298")
+    policy.WithOrigins("https://localhost:7232","http://localhost:5298", "https://chatapp-sunlit-haze-7298.fly.dev")
     .AllowAnyMethod()
     .AllowAnyHeader()
     .AllowCredentials();
@@ -39,12 +42,10 @@ builder.Services.AddAuthentication(options =>
       IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
-#pragma warning disable CS8604 // Possible null reference argument.
 builder.Services.AddSingleton(_ => new Supabase.Client(supabaseURL, supabaseKey, new Supabase.SupabaseOptions
 {
     AutoRefreshToken = true
 }));
-#pragma warning restore CS8604 // Possible null reference argument.
 builder.Services.AddControllers();
 
 var app = builder.Build();
