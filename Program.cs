@@ -47,7 +47,9 @@ builder.Services.AddSingleton(_ => new Supabase.Client(supabaseURL, supabaseKey,
     AutoRefreshToken = true
 }));
 builder.Services.AddControllers();
-
+builder.Services.AddHttpClient("webhooks", c=>c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddSingleton<ChatAppTest.Services.WebhookQueue>();
+builder.Services.AddHostedService<ChatAppTest.Services.WebhookDispatcher>();
 var app = builder.Build();
 
 app.UseCors("BlazorPolicy");

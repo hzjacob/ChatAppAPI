@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using ChatAppTest.Models;
+using static ChatAppTest.Services.RoomAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Postgrest;
 using Postgrest.Interfaces;
 using static Postgrest.Constants;
+using ChatAppTest.Services;
 namespace ChatAppTest.Controllers
 {
     [Authorize]
@@ -12,14 +14,15 @@ namespace ChatAppTest.Controllers
     [Route("api/[controller]")]
     public class MessageController : ControllerBase
     {
-        private const string PublicRoomId = "public-messages";
         private const int MaxPageSize = 100;
 
         private readonly Supabase.Client _supabase;
+        private readonly WebhookQueue _webhookQueue;
 
-        public MessageController(Supabase.Client supabase)
+        public MessageController(Supabase.Client supabase, WebhookQueue webhookQueue)
         {
             _supabase = supabase;
+            _webhookQueue = webhookQueue;
         }
 
         // The user ID and username come from the signed JWT, never from the request,
@@ -29,25 +32,6 @@ namespace ChatAppTest.Controllers
             username = User.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(idClaim, out userId) && username.Length > 0;
-        }
-
-        // "public-messages" is open to every logged-in user.
-        // "private-{a}-{b}" is only open to users a and b.
-        // otherUserId is the other participant of a private room (0 for the public room).
-        private static bool CanAccessRoom(string? roomId, int userId, out long otherUserId)
-        {
-            otherUserId = 0;
-            if (roomId == PublicRoomId)
-                return true;
-
-            var parts = roomId?.Split('-');
-            if (parts is not { Length: 3 } || parts[0] != "private"
-                || !int.TryParse(parts[1], out var a) || !int.TryParse(parts[2], out var b))
-                return false;
-
-            if (a == userId) { otherUserId = b; return true; }
-            if (b == userId) { otherUserId = a; return true; }
-            return false;
         }
 
         // Filter for every room the user may read: the public room plus their own private rooms.
@@ -111,7 +95,11 @@ namespace ChatAppTest.Controllers
                     Content = message.Content,
                     CreatedAt = DateTime.UtcNow
                 };
-                await _supabase.From<Message>().Insert(insertMessage);
+                var inserted = await _supabase.From<Message>().Insert(insertMessage);
+                var saved = inserted.Models.FirstOrDefault() ?? insertMessage;
+
+                _webhookQueue.TryEnqueue(new OutgoingEvent(saved.Id, saved.RoomId!, saved.Username, saved.SenderId, saved.Content, saved.CreatedAt));
+
 
                 return Ok(new { success = true });
             }
